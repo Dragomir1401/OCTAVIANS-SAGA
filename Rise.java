@@ -55,7 +55,7 @@ public class Rise extends Task {
         }
 
         if (!flag)
-
+            System.out.println(m);
 
     }
 
@@ -129,18 +129,6 @@ public class Rise extends Task {
             }
         }
 
-//        System.out.println(alreadyHasList);
-//        System.out.println();
-//
-//        System.out.println(wantedList);
-//        System.out.println();
-//
-//        System.out.println(sets);
-//        System.out.println();
-//
-//
-//        System.out.println(elements);
-//        System.out.println();
 
     }
 
@@ -234,6 +222,13 @@ public class Rise extends Task {
             return;
         }
 
+        String[] arrResult = bufferedReader.readLine().split(" ");
+        for (String s : arrResult) {
+            if (Integer.parseInt(s) > 0) {
+                solution.add(Integer.parseInt(s));
+            }
+        }
+
         response = true;
         bufferedReader.close();
     }
@@ -245,6 +240,15 @@ public class Rise extends Task {
         }
 
         System.out.println(k);
+
+        if (solution != null)
+            for (Integer sol : solution) {
+                if (sol % m == 0)
+                    System.out.print(m + " ");
+                else
+                    System.out.print(sol % m + " ");
+            }
+
         flag = true;
     }
 

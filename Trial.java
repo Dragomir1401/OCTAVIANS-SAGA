@@ -183,6 +183,7 @@ public class Trial extends Task {
                 solution.add(Integer.parseInt(s));
             }
         }
+
         response = true;
         bufferedReader.close();
     }
