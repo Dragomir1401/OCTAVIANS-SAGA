@@ -3,21 +3,28 @@ import java.util.ArrayList;
 import java.util.Arrays;
 class Element {
     int value;
-    int whatSetContainsIt;
+    ArrayList<Integer> whatSetsContainsIt;
 
-    public Element(int value, int whatSetContainsIt) {
+    public Element(int value, ArrayList<Integer> whatSetContainsIt) {
         this.value = value;
-        this.whatSetContainsIt = whatSetContainsIt;
+        this.whatSetsContainsIt = whatSetContainsIt;
     }
 
     public int getValue() {
         return value;
     }
 
-    public int getWhatSetContainsIt() {
-        return whatSetContainsIt;
+    public ArrayList<Integer> getWhatSetsContainsIt() {
+        return whatSetsContainsIt;
     }
 
+    @Override
+    public String toString() {
+        return "Element{" +
+                "value=" + value +
+                ", whatSetsContainsIt=" + whatSetsContainsIt +
+                '}';
+    }
 }
 
 public class Trial extends Task {
@@ -27,6 +34,7 @@ public class Trial extends Task {
     ArrayList<ArrayList<Integer>> sets = new ArrayList<>();
     ArrayList<Integer> solution = new ArrayList<>();
     ArrayList<Element> elements = new ArrayList<>();
+    boolean response;
 
     @Override
     public void solve() throws IOException, InterruptedException {
@@ -67,22 +75,19 @@ public class Trial extends Task {
             sets.add(currentSet);
         }
 
+        elements.add(new Element(-1, new ArrayList<>()));
         for (int i = 1; i <= n; i++) {
-            int freq = 0;
-            int setNr = 0;
-            for (int poz = 0; poz < sets.size(); poz++) {
-                for (Integer integer : sets.get(poz)) {
+            elements.add(new Element(i, new ArrayList<>()));
+            for (int setNr = 1; setNr <= sets.size(); setNr++) {
+                for (Integer integer : sets.get(setNr - 1)) {
                     if (integer.equals(i)) {
-                        freq++;
-                        setNr = poz;
+                        elements.get(i).getWhatSetsContainsIt().add(setNr);
                     }
                 }
             }
-            if (freq == 1) {
-                elements.add(new Element(i, setNr));
-            }
         }
     }
+
 
 
     public boolean containsValue(int value) {
@@ -96,7 +101,8 @@ public class Trial extends Task {
     public void formulateOracleQuestion() throws IOException {
         // Initialise file writer
         FileWriter fileWriter = new FileWriter("sat.cnf");
-        fileWriter.write("p cnf " + m * k + " " + n);
+        int nrClauses = k * m + m + k * (m - 1) + k;
+        fileWriter.write("p cnf " + m * k + " " + nrClauses);
         fileWriter.write("\n");
 
         // Create clauses numbering from 1...n * m stating
@@ -131,60 +137,24 @@ public class Trial extends Task {
             }
         }
 
-        // Clauses for edges to have vertices on cover
-        for (int i = 0; i < m * k; i++) {
-            fileWriter.write(i + 1 + " ");
-        }
-        fileWriter.write("0\n");
 
-        // Clauses for unique elements
+        // Final clause to see what sets contain each element
+
         for (Element element : elements) {
-            for (int i = 0; i < k; i++) {
-                fileWriter.write(clauses[i][element.getWhatSetContainsIt()] + " ");
+            if (element.getValue() > 0) {
+                for (Integer set : element.getWhatSetsContainsIt())
+                    for (int i = 0; i < k; i++)
+                        fileWriter.write(clauses[i][set - 1] + " ");
+                fileWriter.write("0\n");
             }
-            fileWriter.write("0\n");
         }
 
-        // Final clause
-        for (int i = 0; i < m; i++)
-            if (!containsValue(i + 1)) {
-                for (int l = 0; l < k; l++)
-                    fileWriter.write(clauses[l][i] + " ");
-            }
-        fileWriter.write("0\n");
-        
+
+
         fileWriter.close();
 
     }
 
-    public static void generateCombinations(int[] combination, int start, int m, int k, int[][] matrix, int index) {
-        if (k == 0) {
-            matrix[index] = combination.clone();
-            return;
-        }
-        for (int i = start; i <= m - k + 1; i++) {
-            combination[k-1] = i;
-            generateCombinations(combination, i+1, m, k-1, matrix, index);
-            index++;
-        }
-    }
-
-    public int calculateCombinations(int n, int k) {
-        int Cnk = 1;
-        for (int i = 2; i <= n; i++)
-            Cnk *= i;
-
-        int kf = 1;
-        for (int i = 2; i <= k; i++)
-            kf *= i;
-
-        int nkf = 1;
-        for (int i = 2; i <= n - k; i++)
-            nkf *= i;
-
-        Cnk = Cnk / kf / nkf;
-        return Cnk;
-    }
     public void createClauses(int[][] clauses) {
         int counter = 1;
         for (int i = 0; i < k; i++) {
@@ -210,6 +180,7 @@ public class Trial extends Task {
         bufferedReader.readLine();
 
         if(result.equals("False")) {
+            response = false;
             return;
         }
 
@@ -219,15 +190,22 @@ public class Trial extends Task {
                 solution.add(Integer.parseInt(s));
             }
         }
-
+        response = true;
         bufferedReader.close();
     }
 
     @Override
     public void writeAnswer() throws IOException {
-        if(solution != null)
-            for(Integer sol : solution) {
-                System.out.print(sol + " ");
+        if (!response) {
+            System.out.print("False\n");
+            return;
+        }
+        System.out.print("True\n");
+        System.out.println(solution.size());
+
+        if (solution != null)
+            for (Integer sol : solution) {
+                System.out.print(sol % m + " ");
             }
         System.out.println();
     }
