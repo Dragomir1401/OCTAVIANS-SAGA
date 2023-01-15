@@ -38,11 +38,11 @@ public class Trial extends Task {
 
     @Override
     public void solve() throws IOException, InterruptedException {
-        readProblemData();
-        formulateOracleQuestion();
+        this.readProblemData();
+        this.formulateOracleQuestion();
         askOracle();
-        decipherOracleAnswer();
-        writeAnswer();
+        this.decipherOracleAnswer();
+        this.writeAnswer();
     }
 
     @Override
@@ -89,19 +89,11 @@ public class Trial extends Task {
     }
 
 
-
-    public boolean containsValue(int value) {
-        for (Element element : elements) {
-            if (element.getValue() == value)
-                return true;
-        }
-        return false;
-    }
     @Override
     public void formulateOracleQuestion() throws IOException {
         // Initialise file writer
         FileWriter fileWriter = new FileWriter("sat.cnf");
-        int nrClauses = k * m + m + k * (m - 1) + k;
+        int nrClauses = 2 * k * m + k * (m - 1) * (m - 1) + n;
         fileWriter.write("p cnf " + m * k + " " + nrClauses);
         fileWriter.write("\n");
 
@@ -120,10 +112,12 @@ public class Trial extends Task {
 
 
         // Max one choice of set i for 1...n
-        for (int i = 0; i < m ; i++) {
-            fileWriter.write(-clauses[0][i] + " ");
-            fileWriter.write(-clauses[1][i] + " ");
-            fileWriter.write("0\n");
+        if (sets.size() > 1 && k > 1) {
+            for (int i = 0; i < m; i++) {
+                for (int l = 0; l < k; l++)
+                    fileWriter.write(-clauses[l][i] + " ");
+                fileWriter.write("0\n");
+            }
         }
 
         // Clauses for unit of choice pe index
@@ -139,7 +133,6 @@ public class Trial extends Task {
 
 
         // Final clause to see what sets contain each element
-
         for (Element element : elements) {
             if (element.getValue() > 0) {
                 for (Integer set : element.getWhatSetsContainsIt())
@@ -205,9 +198,11 @@ public class Trial extends Task {
 
         if (solution != null)
             for (Integer sol : solution) {
-                System.out.print(sol % m + " ");
+                if (sol % m == 0)
+                    System.out.print(m + " ");
+                else
+                    System.out.print(sol % m + " ");
             }
-        System.out.println();
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
