@@ -217,9 +217,9 @@ very well by example iin the requirements.
 
 Resources:
 
-https://curs.upb.ro/2022/pluginfile.php/434339/mod_resource/content/13/AA___Tema2_2022.pdfhttps://curs.upb.ro/2022/pluginfile.php/434339/mod_resource/content/13/AA___Tema2_2022.pdf
-
 https://github.com/RaduNichita/tema2-aa-public
+
+https://www.borealisai.com/research-blogs/tutorial-9-sat-solvers-i-introduction-and-applications/#:~:text=A%20SAT%20solver%20is%20an,that%20no%20such%20combination%20exists.
 
 
 -----------------------------------------------------------------------------
