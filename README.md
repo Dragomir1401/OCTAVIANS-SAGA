@@ -1,90 +1,225 @@
-## Analiza Algoritmilor 2023 - Tema2
+______________________________
+__________________Copyright__________________
 
-### Structură arhivă
-```bash
-student@aa:$ tree -L 1
-.
-├── check
-├── check_utils
-├── install.sh
-├── Makefile.example_cpp
-├── Makefile.exampleJava
-├── README.md
-├── sat_oracle.py
-├── task.h
-├── Task.java
-└── tasks
-```
-### Structură cod
+                Dragomir Andrei 2022 
+_______________________________________________________________
+----------------------------------------------------------------------------
+Name: Dragomir Andrei
 
-Pentru rezolvarea task-urilor `trial` și `rise`, recomandăm modularizare în următoarele funcții:
+Class: 322CA
+_______________________________________________________________
+----------------------------------------------------------------------------
+--------------------------------_OCTAVIAN'S SAGA_--------------------------
+----------------------------------------------------------------------------
 
-1. o funcție care citește de la `stdin` datele de intrare.
-1. o funcție care formulează clauzele către oracol.
-1. o funcție care apelează oracolul (deja implementată).
-1. o funcție care descifrează (prelucrează) răspunsul oracolului.
-1. o funcție care afișează rezultatul la `stdout`.
 
-Pentru fiecare din limbajele `C++` și `Java` există o clasă
-ce conține cele 5 metode menționate anterior, din care puteți moșteni câte o clasă pentru fiecare problemă in parte (e.g: puteți avea clasele Task1, Task2, Task3 care moștenesc clasa abstractă Task).
 
-Trebuiesc implementate doar metodele 1, 2, 4, 5. Apelarea oracolului este deja realizată de funcția `ask_oracle` (`askOracle`). Va trebui **doar** să o apelați după ce formulați clauzele SAT corespunzătoare fiecărei probleme.
+----------------------------------------------------------------------------
 
-Pentru rezolvarea task-ului `redemption` se poate folosi orice abordare.
 
-### Makefile
+____________Description____________
 
-Pentru fiecare problemă, va trebui să fie o regulă corespunzătoare în Makefile run_`<nume_problema`> (e.g: `run_rise`)
 
-Există câte un exemplu pentru fiecare din limbajele `C++` și `Java`. **Nu este permisă folosirea flag-urilor de optimizare.**
+This project represents a simple suite of solvers for a very specific problem:
 
-### Rulare checker
+Choosing a minimum number of decks to cover wanted cards. Each deck mai contain
+random amount of cards. We need to find a minimum number of decks in order to
+have the wanted collection complete.
 
-Pentru a rula checker-ul, folosiți comanda `./check`
 
-Pentru a rula un anumit task, folosiți comanda `./check --task {nume_task}`. (exemplu: `./check --task rise`).
+We have as base a SAT problem solver which know to solve only a task efficiently:
+Finding true variables in clauses to see if condition given can be fulfilled.
 
-Testele pentru fiecare problemă se găsesc în folder-ul `tasks/<nume_problema>/tests`. (exemplu: testele pentru problema rise se găsesc în folder-ul `tasks/rise/tasks`).
+    There are different stages of this project:
 
-După rularea checker-ului, pentru fiecare test este generat un fișier de output în folderul (`tasks/<nume_problemă>/tests/<XY-nume_problemă>/<XY-nume_problemă.out>`), unde XY este numărul testului
-(exemplu: **după** rularea checker-ului, rezultatul testului 00 pentru problema `rise`, output-ul se va găsi la ` tasks/rise/tests/00-rise/00-rise.out`).
 
-### Mod de testare
+    1 -- Trial - a test for the SAT problem solver and base for Rise
 
-* `trial` : fișierele de referință conțin doar `True` sau `False`, reprezentând dacă fișierul de input are sau nu soluție.
-Dacă răspunsul este `True`, checker-ul va verifica că indicii afisați formează un set cover valid.
 
-* `rise` : fișierele de referință conține numărul minim de pachețele achiziționate. Checker-ul va verifica că indicii pachețelelor afisațe conțin cărțile dorite.
+    2 -- Rise - actual solver of the problematic with the SAT solver
+    
 
-* `redemption` : fișierele de referință conține numărul minim de pachețele achiziționate. Checker-ul va verifica că indicii pachețelelor afisațe conțin cărțile dorite.
+    3 -- Redemption - a Greedy solution which aproximates the minimum of
+    sets needed to fulfill the wanted list
 
-Pentru a măsura performanța algoritmului vom folosi următoarea formulă:
 
-```python
-factor1 = (min(given_elems, expected_elems) / expected_elems)
 
-factor2 = 1 - ((abs(given_sets - expected_sets)) / expected_sets)
 
-return 0.5 * factor1 + 0.5 * factor2
-```
+-----------------------------------------------------------------------------
 
-unde
 
-* given_sets = numărul de pachețele date în soluția voastră
-* expected_sets-uri = numărul de pachețele din soluția optimă
-* given_elems = cărțile necesare date în soluția voastră
-* expected_elems = cărțile necesare
 
-Punctarea se va face astfel:
 
-* un scor `<= 0.6` va fi punctat cu 0p
-* un scor `>= 0.9` va fi punctat cu 3p, punctajul maxim pe test.
-* un scor s între 0.6 și 0.9 va fi punctat liniar după formula:
-```
-    punctaj = (s - 0.6) / (0.9 - 0.6) * 3p
-```
+------------------------------------------------------------------------------
 
-Exemplu:
 
-1. un scor de `0.75` va obține `1.5p / 3p`
-1. un scor de `0.8` va fi punctat cu `2p / 3p`
+____________Implementation____________
+
+--------------------------------------_TRIAL_---------------------------------
+
+    Trial is just a test for the Oracle given(the SAT problem solver).
+    The implementation consists of creating the sat.cnf file which is send
+    to the Oracle for interpretation.
+
+    
+    Clauses are separatedd in:
+
+                                 * Clauses *
+                                     ||
+    /-----------------/-------------------\-------------------\------------\
+    |                                                                
+    | Clauses for first possible element, second, ..., k-th possible element.
+    |
+    |-----------------/-------------------\-------------------\------------\
+    |                                                                
+    | Clauses for maximum one choosing of set i for each i ranging 1...n.
+    |
+    |-----------------/-------------------\-------------------\------------\
+    |                                                                
+    | Clauses for choosing only one set for each position ranging 1...k.
+    |
+    |-----------------/-------------------\-------------------\------------\
+    |                                                                
+    | Clause to choose at least one set that contains each element seeked.
+    |
+    |-----------------/-------------------\-------------------\------------\
+
+    
+    Clauses are consecutive numbers which range 1, 2, 3...m on first row, then
+    m, m + 1, m + 2 ... 2 * m on second row
+    .....
+    (k - 1) * m, (k - 1) * m + 1, (k - 1) * m + 2 ... k * m on k-th row.
+
+For a simple example of created clauses explanation looks like:
+
+    p cnf 6 15              where input was:
+    1 2 3 0                     4 3 2               meaning n = 4 seeked set size
+    4 5 6 0                     2 1 2                       m = 3 number of sets given
+    -1 -4 0                     3 2 3 4                     k = 2 number of sets wanted
+    -2 -5 0                     2 2 3
+    -3 -6 0
+    -1 -2 0
+    -1 -3 0
+    -2 -3 0
+    -4 -5 0
+    -4 -6 0
+    -5 -6 0
+    1 4 0
+    1 4 2 5 3 6 0
+    2 5 3 6 0
+    2 5 0
+    
+
+    0 ends a valid clause
+
+    
+    *
+    1 2 3 0 means that for first position of the seeked sets cand be ocuppied by 
+    one of the three given sets
+    
+    4 5 6 0 means that for first position of the seeked sets cand be ocuppied by
+    one of the three given sets
+    *
+
+    *
+    -1 -4 0 means that we cant choose set 1 for more than one position
+    
+    -2 -5 0 means that we cant choose set 2 for more than one position  
+
+    -3 -6 0 means that we cant choose set 3 for more than one position   
+    *
+
+    * 
+    -1 -2 0 means that we cannot choose set 1 and set 2 on the same first position
+
+    -1 -3 0 means that we cannot choose set 1 and set 3 on the same first position
+
+    -2 -3 0 means that we cannot choose set 2 and set 3 on the same first position
+
+    -4 -5 0 means that we cannot choose set 1 and set 2 on the same second position
+
+    -4 -6 0 means that we cannot choose set 1 and set 3 on the same second position
+
+    -5 -6 0 means that we cannot choose set 2 and set 3 on the same second position
+    *
+
+    *
+    Number 1 is contained by only set 1:
+    1 4 0 means that we have to choose set 1 for either of the positions
+    
+    Number 2 is contained by all 3 sets:
+    1 4 2 5 3 6 0 means that we have to choose set 1, set 2 or set 3 for either of the positions
+
+    Number 3 is contained by only set 2 and 3:
+    2 5 3 6 0 means that we have to choose set 2 or set 3 for either of the positions
+    
+    Number 4 is contained by only set 2:
+    2 5 0 means that we have to choose set 2 for either of the positions
+
+
+    Finding what sets contain each element is done by storing a list of a class
+    which contains the value and what sets have that value in it.
+    *
+
+
+
+--------------------------------------_RISE_----------------------------------
+
+    Rise represents the solving of the actual practical problem using what we have done
+    with the trial. We use the same logic in order to find the minimum value of k,
+    meaning that we find the minimum number of sets needed to complete the wanted
+    list of cards for Octavian.
+
+
+
+--------------------------------------_REDEMPTION_-----------------------------
+
+    Rise represents the Greedy solving of the problem. It can only aproximate
+    the needed solution.
+
+    The algorithm consists of finding each time the best deck to buy, meaning
+    the one which contains the most wanted cards. We do that until the wanted
+    list becomes empty. The solution consists of the best sets used until 
+    we find all the cards needed. 
+
+    It does not give the minimum number for each
+    case, as it is obvious that there are cases where there is a combination
+    of fewer decks that are not the best options but create the wanted list.
+
+------------------------------------------------------------------------------
+
+
+
+
+
+------------------------------------------------------------------------------
+
+_____________Comments_____________
+
+
+The implementation could have been done better based on the generality of
+the code. Besides this I could have made a more modularized approach.
+
+The code could have been written way faster if explanation of how the SAT
+solver works was better explained. Either way it was decent like this, but 
+I personally had a hard time understanding that the clauses are given
+very well by example iin the requirements.
+
+
+------------------------------------------------------------------------------
+
+
+
+
+
+-----------------------------------------------------------------------------
+
+
+Resources:
+
+https://curs.upb.ro/2022/pluginfile.php/434339/mod_resource/content/13/AA___Tema2_2022.pdfhttps://curs.upb.ro/2022/pluginfile.php/434339/mod_resource/content/13/AA___Tema2_2022.pdf
+
+https://github.com/RaduNichita/tema2-aa-public
+
+
+-----------------------------------------------------------------------------

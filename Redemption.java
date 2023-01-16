@@ -1,35 +1,36 @@
-import org.w3c.dom.ls.LSException;
-
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 
 public class Redemption {
     int  n;
     int m;
     int p;
-    boolean flag = false;
     ArrayList<ArrayList<String>> sets = new ArrayList<>();
     ArrayList<Integer> solution = new ArrayList<>();
-    ArrayList<ElementCard> elements = new ArrayList<>();
-    boolean response;
     ArrayList<String> wantedList = new ArrayList<>();
     ArrayList<String> alreadyHasList = new ArrayList<>();
 
     public void solve() throws IOException {
-        this.readProblemData();
-        this.find();
-        this.writeAnswer();
+        // Read input
+        readProblemData();
+
+        // Find solution
+        find();
+
+        // Write result
+        writeAnswer();
     }
 
     public void find() {
-
+        // Arrays for how many wanted cards each set contains and their initial position in the sets
         ArrayList<Integer> appearancesCounters = new ArrayList<>();
         ArrayList<Integer> initialPosition;
 
+
+        // Initialise array for counting appearances
         for (int i = 0; i < m; i++)
             appearancesCounters.add(i, 0);
+
 
         // While we did not find all cards
         while (!wantedList.isEmpty()) {
@@ -48,22 +49,27 @@ public class Redemption {
 
             initialPosition = sortIndexesByValue(appearancesCounters);
 
+
             // Use that deck and save it
             for (String card : sets.get(initialPosition.get(0)))
                 wantedList.remove(card);
 
+
+            // Add solution
             solution.add(initialPosition.get(0));
         }
-
     }
 
 
 
     public static ArrayList<Integer> sortIndexesByValue(ArrayList<Integer> arr) {
+        // Sort indexes by putting first the ones with more wanted cards
         ArrayList<Integer> indexes = new ArrayList<>();
+
         for (int i = 0; i < arr.size(); i++) {
             indexes.add(i);
         }
+
         indexes.sort((a, b) -> -Integer.compare(arr.get(a), arr.get(b)));
         return indexes;
     }
@@ -93,6 +99,7 @@ public class Redemption {
         }
 
 
+
         for (int i = 0; i < n; i++) {
             // Read line by line
             line = bufferedReader.readLine();
@@ -103,31 +110,22 @@ public class Redemption {
         }
 
 
-        for (int i = 0; i < m; i++) {
-
-            // Parse elements in sets
-            int noElements = Integer.parseInt(bufferedReader.readLine());
-
-            ArrayList<String> currentSet = new ArrayList<>();
-
-            for (int j = 0; j < noElements; j++) {
-                line = bufferedReader.readLine();
-                currentSet.add(line);
-            }
-
-            sets.add(currentSet);
-        }
-
+        // Create set input
+        Rise.createSetInput(bufferedReader, m, sets);
     }
 
 
-    public void writeAnswer() throws IOException {
+    public void writeAnswer() {
+        // Write size of approximation solution
         System.out.println(solution.size());
-        for (int index = 0; index < solution.size(); index++)
-            System.out.print((solution.get(index) + 1) + " ");
+
+        // Write solution itself
+        for (Integer integer : solution)
+            System.out.print((integer + 1) + " ");
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException {
+        // Solve Redemption
         Redemption redemption = new Redemption();
         redemption.solve();
     }

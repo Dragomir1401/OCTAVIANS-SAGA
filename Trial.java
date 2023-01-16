@@ -1,6 +1,6 @@
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
+
 class Element {
     int value;
     ArrayList<Integer> whatSetsContainsIt;
@@ -28,21 +28,30 @@ class Element {
 }
 
 public class Trial extends Task {
-    int  n;
-    int m;
-    int k;
-    ArrayList<ArrayList<Integer>> sets = new ArrayList<>();
-    ArrayList<Integer> solution = new ArrayList<>();
-    ArrayList<Element> elements = new ArrayList<>();
-    boolean response;
+    static int  n;
+    static int m;
+    static int k;
+    static ArrayList<ArrayList<Integer>> sets = new ArrayList<>();
+    static ArrayList<Integer> solution = new ArrayList<>();
+    static ArrayList<Element> elements = new ArrayList<>();
+    static boolean response;
 
     @Override
     public void solve() throws IOException, InterruptedException {
-        this.readProblemData();
-        this.formulateOracleQuestion();
+        // Read input
+        readProblemData();
+
+        // Formulate clauses
+        formulateOracleQuestion();
+
+        // Ask SAT solver
         askOracle();
-        this.decipherOracleAnswer();
-        this.writeAnswer();
+
+        // Decipher answer
+        decipherOracleAnswer();
+
+        // Write answer to output
+        writeAnswer();
     }
 
     @Override
@@ -51,14 +60,17 @@ public class Trial extends Task {
         InputStreamReader inputStreamReader = new InputStreamReader(System.in);
         BufferedReader  bufferedReader = new BufferedReader(inputStreamReader);
 
+
         // Get first line
         String line = bufferedReader.readLine();
         String[] dimensions = line.split(" ");
+
 
         // Find dimensions
         n = Integer.parseInt(dimensions[0]);
         m = Integer.parseInt(dimensions[1]);
         k = Integer.parseInt(dimensions[2]);
+
 
         for (int i = 0; i < m; i++) {
             // Read line by line
@@ -68,16 +80,24 @@ public class Trial extends Task {
             String[] elements = line.split(" ");
             ArrayList<Integer> currentSet = new ArrayList<>();
 
+            // Sets is a set of arrays of Integers
             for (int j = 0; j < Integer.parseInt(elements[0]); j++) {
                 currentSet.add(Integer.parseInt(elements[1 + j]));
             }
 
+            // Add made set to sets
             sets.add(currentSet);
         }
 
+
+        // Elements contains info about value and what sets contain it
+        // Blank first element to match indexes
         elements.add(new Element(-1, new ArrayList<>()));
-        for (int i = 1; i <= n; i++) {
+
+        int i = 1;
+        while (i <= n) {
             elements.add(new Element(i, new ArrayList<>()));
+
             for (int setNr = 1; setNr <= sets.size(); setNr++) {
                 for (Integer integer : sets.get(setNr - 1)) {
                     if (integer.equals(i)) {
@@ -85,33 +105,29 @@ public class Trial extends Task {
                     }
                 }
             }
+            i++;
         }
     }
 
-
-    @Override
-    public void formulateOracleQuestion() throws IOException {
-        // Initialise file writer
-        FileWriter fileWriter = new FileWriter("sat.cnf");
+    public static void writeHeader(FileWriter fileWriter) throws IOException {
+        // Write number of clauses matching each for maxes
         int nrClauses = 2 * k * m + k * (m - 1) * (m - 1) + n;
         fileWriter.write("p cnf " + m * k + " " + nrClauses);
         fileWriter.write("\n");
+    }
 
-        // Create clauses numbering from 1...n * m stating
-        // clauses[i][j] means element i was taken from set j
-        int[][] clauses = new int[k][m];
-        createClauses(clauses);
-
-        // Write clause for first possible element, second, ..., k-th element
+    public static void kPossibleElement(FileWriter fileWriter, int[][] clauses) throws IOException {
+        // k * m clauses of matching each possible element in wanted pool
         for (int i = 0; i < k; i++) {
             for (int j = 0; j < m; j++) {
                 fileWriter.write(clauses[i][j] + " ");
             }
             fileWriter.write("0\n");
         }
+    }
 
-
-        // Max one choice of set i for 1...n
+    public static void singularChoice(FileWriter fileWriter, int[][] clauses) throws IOException {
+        // k * m clauses of choosing only one element per each position in solution
         if (sets.size() > 1 && k > 1) {
             for (int i = 0; i < m; i++) {
                 for (int l = 0; l < k; l++)
@@ -119,8 +135,12 @@ public class Trial extends Task {
                 fileWriter.write("0\n");
             }
         }
+    }
 
-        // Clauses for unit of choice pe index
+
+    public static void chooseOnlyOneSetPerPosition(FileWriter fileWriter, int[][] clauses) throws IOException {
+        // Max k * (m - 1) * (m - 1) clauses which state not being able to put
+        // two different sets on the same position
         for (int l = 0; l < k; l++) {
             for (int i = 0; i < m - 1; i++) {
                 for (int j = i + 1; j < m; j++) {
@@ -130,9 +150,11 @@ public class Trial extends Task {
                 }
             }
         }
+    }
 
-
-        // Final clause to see what sets contain each element
+    public static void contentClause(FileWriter fileWriter, int[][] clauses) throws IOException {
+        // Clauses that make sure each element from 1...n appear in the solution by choosing
+        // at least one set which contain each element
         for (Element element : elements) {
             if (element.getValue() > 0) {
                 for (Integer set : element.getWhatSetsContainsIt())
@@ -141,42 +163,77 @@ public class Trial extends Task {
                 fileWriter.write("0\n");
             }
         }
-
-
-
-        fileWriter.close();
-
     }
 
-    public void createClauses(int[][] clauses) {
+    @Override
+    public void formulateOracleQuestion() throws IOException {
+        // Initialise file writer
+        FileWriter fileWriter = new FileWriter("sat.cnf");
+
+        // Write header with p cnf nrOfVariables and then NrOfClauses
+        writeHeader(fileWriter);
+
+        // Create clauses numbering from 1...n * m stating
+        // clauses[i][j] means element i was taken from set j
+        int[][] clauses = new int[k][m];
+        createClauses(clauses);
+
+        // Write clause for first possible element, second, ..., k-th possible element
+        kPossibleElement(fileWriter, clauses);
+
+
+        // Max one choice of set i for i = 1...n
+        singularChoice(fileWriter, clauses);
+
+        // Clauses for choosing only one set for each position
+        chooseOnlyOneSetPerPosition(fileWriter, clauses);
+
+
+        // Final clause to choose at least one set that contains each element seeked
+        contentClause(fileWriter, clauses);
+
+        // Close file writer
+        fileWriter.close();
+    }
+
+    public static void createClauses(int[][] clauses) {
+        // Create clauses with consecutive numbers
         int counter = 1;
+
         for (int i = 0; i < k; i++) {
             for (int j = 0; j < m; j++) {
                 clauses[i][j] = counter;
                 counter++;
             }
         }
-
     }
+
 
     @Override
     public void decipherOracleAnswer() throws IOException {
         // Create result string
         String result;
 
+
         // Open sol for reading oracle output
         File file = new File("sat.sol");
         BufferedReader bufferedReader;
         bufferedReader = new BufferedReader(new FileReader(file));
 
+
+        // Read result
         result = String.valueOf(bufferedReader.readLine());
         bufferedReader.readLine();
 
-        if(result.equals("False")) {
+
+        // Exit in case of false result
+        if (result.equals("False")) {
             response = false;
             return;
         }
 
+
+        // Add into solution variables that are detected as true
         String[] arrResult = bufferedReader.readLine().split(" ");
         for (String s : arrResult) {
             if (Integer.parseInt(s) > 0) {
@@ -184,29 +241,38 @@ public class Trial extends Task {
             }
         }
 
+
+        // Set response to true and exit
         response = true;
         bufferedReader.close();
     }
 
     @Override
-    public void writeAnswer() throws IOException {
+    public void writeAnswer() {
+
+        // False response is written as such
         if (!response) {
             System.out.print("False\n");
             return;
         }
+
+        // True response is written with solution size and solution ids
         System.out.print("True\n");
         System.out.println(solution.size());
 
-        if (solution != null)
+        // Write solutions in range of [1, m] translating constructed variable
+        if (solution != null) {
             for (Integer sol : solution) {
                 if (sol % m == 0)
                     System.out.print(m + " ");
                 else
                     System.out.print(sol % m + " ");
             }
+        }
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
+        // Solve trial
         Trial trial = new Trial();
         trial.solve();
     }
